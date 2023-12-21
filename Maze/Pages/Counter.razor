@@ -1,0 +1,100 @@
+﻿@page "/counter"
+@using Maze.Clases;
+@using Maze.Services;
+@inject IMazeService _mazeService
+@code {
+	int x = 0, y = 0;
+	// GameResponse? gameResponse;
+	GameDefinition? gameDefinition;
+	MazeBlockView? mazeBlockView;
+}
+
+<PageTitle>Maze</PageTitle>
+
+@if (gameDefinition == null || gameDefinition.Completed)
+{
+	<div class="row">
+		<div class="col-lg-12">
+			<label class="control-label">Medidas</label>
+		</div>
+		<div class="col-lg-3">
+			<label class="control-label">X: </label>
+			<input type="number" class="form-control" @bind-value="x" />
+		</div>
+		<div class="col-lg-3">
+			<label class="control-label">Y: </label>
+			<input type="number" class="form-control" @bind-value="y" />
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-lg-12">
+			<button class="btn btn-primary" @onclick="StartNewGame">Start new game</button>
+		</div>
+	</div>
+}
+else
+{
+	<div>
+		@if (!mazeBlockView!.NorthBlocked)
+		{
+			<button class="btn btn-success" @onclick="() => Play(GameRequest.PlayerOperation.GoNorth)">GoNorth</button>
+		}
+		@if (!mazeBlockView!.SouthBlocked)
+		{
+			<button class="btn btn-success" @onclick="() => Play(GameRequest.PlayerOperation.GoSouth)">GoSouth</button>
+		}
+		@if (!mazeBlockView!.EastBlocked)
+		{
+			<button class="btn btn-success" @onclick="() => Play(GameRequest.PlayerOperation.GoEast)">GoEast</button>
+		}
+		@if (!mazeBlockView!.WestBlocked)
+		{
+			<button class="btn btn-success" @onclick="() => Play(GameRequest.PlayerOperation.GoWest)">GoWest</button>
+		}
+		<button class="btn btn-primary" @onclick="ReStartGame">Re-Start game</button>
+	</div>
+	<div>
+		<div class="row">
+			<div class="col-lg-12">
+				<label class="control-label">Coordenadas Actuales</label>
+			</div>
+			<div class="col-lg-3">
+				<label class="control-label">X: </label>
+				<span>@gameDefinition.CurrentPositionX</span>
+			</div>
+			<div class="col-lg-3">
+				<label class="control-label">Y: </label>
+				<span>@gameDefinition.CurrentPositionY</span>
+			</div>
+			
+		</div>
+	</div>
+}
+	
+@code {
+	private int currentCount = 0;
+
+	public async void StartNewGame()
+	{
+		if (x <= 0 || y <= 0)
+			return;
+
+		gameDefinition = await _mazeService.NewGame(x, y);
+	}
+
+	public async void ReStartGame()
+	{
+		if (gameDefinition != null)
+			gameDefinition = await _mazeService.RestartGame(gameDefinition.MazeUid, gameDefinition.GameUid);
+	}
+
+	public async void Play(GameRequest.PlayerOperation operation)
+	{
+		if (gameDefinition != null)
+		{
+			GameResponse gameResponse = await _mazeService.Play(gameDefinition.MazeUid, gameDefinition.GameUid, operation);
+			gameDefinition = gameResponse.Game;
+			mazeBlockView = gameResponse.MazeBlockView;
+		}
+	}
+}
